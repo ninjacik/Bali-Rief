@@ -1,13 +1,23 @@
 {
   "version": 2,
-  "rewrites": [
+  "builds": [
     {
-      "source": "/api/(.*)",
-      "destination": "/artifacts/api-server/$1"
+      "src": "artifacts/api-server/src/app.ts",
+      "use": "@vercel/node"
     },
     {
-      "source": "/(.*)",
-      "destination": "/artifacts/bencana-bali/$1"
+      "src": "artifacts/bencana-bali/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "artifacts/api-server/src/app.ts"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "artifacts/bencana-bali/$1"
     }
   ]
 }
