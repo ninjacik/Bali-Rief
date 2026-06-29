@@ -1,0 +1,921 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Sistem Koordinasi Bencana Bali API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: laporan
+    description: Laporan bencana
+  - name: relawan
+    description: Manajemen relawan
+  - name: inventaris
+    description: Inventaris barang donasi
+  - name: penugasan
+    description: Penugasan relawan
+  - name: kebutuhan
+    description: Kebutuhan per laporan
+  - name: dashboard
+    description: Dashboard statistik
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /laporan:
+    get:
+      operationId: getLaporan
+      tags: [laporan]
+      summary: Daftar semua laporan bencana
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [menunggu, terverifikasi, selesai]
+        - name: jenis_bencana
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Daftar laporan
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Laporan"
+    post:
+      operationId: createLaporan
+      tags: [laporan]
+      summary: Buat laporan bencana baru
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LaporanInput"
+      responses:
+        "201":
+          description: Laporan berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Laporan"
+
+  /laporan/{id}:
+    get:
+      operationId: getLaporanById
+      tags: [laporan]
+      summary: Detail laporan bencana
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detail laporan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LaporanDetail"
+        "404":
+          description: Laporan tidak ditemukan
+    patch:
+      operationId: updateLaporan
+      tags: [laporan]
+      summary: Update laporan (verifikasi admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LaporanUpdate"
+      responses:
+        "200":
+          description: Laporan diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Laporan"
+
+  /laporan/{id}/kebutuhan:
+    get:
+      operationId: getKebutuhanByLaporan
+      tags: [kebutuhan]
+      summary: Daftar kebutuhan per laporan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Daftar kebutuhan
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Kebutuhan"
+    post:
+      operationId: createKebutuhan
+      tags: [kebutuhan]
+      summary: Tambah kebutuhan ke laporan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KebutuhanInput"
+      responses:
+        "201":
+          description: Kebutuhan berhasil ditambahkan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Kebutuhan"
+
+  /kebutuhan/{id}:
+    patch:
+      operationId: updateKebutuhan
+      tags: [kebutuhan]
+      summary: Update progress kebutuhan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KebutuhanUpdate"
+      responses:
+        "200":
+          description: Kebutuhan diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Kebutuhan"
+
+  /relawan:
+    get:
+      operationId: getRelawan
+      tags: [relawan]
+      summary: Daftar relawan
+      parameters:
+        - name: status_verifikasi
+          in: query
+          schema:
+            type: string
+            enum: [menunggu, terverifikasi, ditolak]
+      responses:
+        "200":
+          description: Daftar relawan
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Relawan"
+    post:
+      operationId: createRelawan
+      tags: [relawan]
+      summary: Daftar sebagai relawan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RelawanInput"
+      responses:
+        "201":
+          description: Pendaftaran relawan berhasil
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Relawan"
+
+  /relawan/{id}:
+    get:
+      operationId: getRelawanById
+      tags: [relawan]
+      summary: Detail relawan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detail relawan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Relawan"
+
+  /relawan/{id}/verifikasi:
+    patch:
+      operationId: verifikasiRelawan
+      tags: [relawan]
+      summary: Verifikasi relawan oleh admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifikasiRelawanInput"
+      responses:
+        "200":
+          description: Status verifikasi diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Relawan"
+
+  /inventaris:
+    get:
+      operationId: getInventaris
+      tags: [inventaris]
+      summary: Daftar inventaris barang donasi
+      parameters:
+        - name: kategori
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Daftar inventaris
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Inventaris"
+    post:
+      operationId: createInventaris
+      tags: [inventaris]
+      summary: Tambah barang ke inventaris
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventarisInput"
+      responses:
+        "201":
+          description: Barang berhasil ditambahkan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Inventaris"
+
+  /inventaris/{id}:
+    patch:
+      operationId: updateInventaris
+      tags: [inventaris]
+      summary: Update barang inventaris
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventarisUpdate"
+      responses:
+        "200":
+          description: Inventaris diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Inventaris"
+
+  /inventaris/{id}/transaksi:
+    post:
+      operationId: createTransaksiInventaris
+      tags: [inventaris]
+      summary: Catat transaksi barang masuk/keluar
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransaksiInventarisInput"
+      responses:
+        "201":
+          description: Transaksi berhasil dicatat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransaksiInventaris"
+
+  /inventaris/{id}/transaksi-list:
+    get:
+      operationId: getTransaksiByInventaris
+      tags: [inventaris]
+      summary: Riwayat transaksi per barang
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Daftar transaksi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TransaksiInventaris"
+
+  /penugasan:
+    get:
+      operationId: getPenugasan
+      tags: [penugasan]
+      summary: Daftar penugasan relawan
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [aktif, selesai, dibatalkan]
+        - name: relawan_id
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Daftar penugasan
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Penugasan"
+    post:
+      operationId: createPenugasan
+      tags: [penugasan]
+      summary: Buat penugasan relawan baru
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PenugasanInput"
+      responses:
+        "201":
+          description: Penugasan berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Penugasan"
+
+  /penugasan/{id}:
+    patch:
+      operationId: updatePenugasan
+      tags: [penugasan]
+      summary: Update status penugasan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PenugasanUpdate"
+      responses:
+        "200":
+          description: Penugasan diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Penugasan"
+
+  /dashboard/statistik:
+    get:
+      operationId: getDashboardStatistik
+      tags: [dashboard]
+      summary: Statistik dashboard admin
+      responses:
+        "200":
+          description: Statistik platform
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStatistik"
+
+  /laporan/aktif:
+    get:
+      operationId: getLaporanAktif
+      tags: [laporan]
+      summary: Laporan aktif yang perlu penanganan
+      responses:
+        "200":
+          description: Daftar laporan aktif
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LaporanRingkas"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    Laporan:
+      type: object
+      required: [id, judul, jenis_bencana, lokasi, deskripsi, nama_pelapor, kontak_pelapor, status, created_at]
+      properties:
+        id:
+          type: integer
+        judul:
+          type: string
+        jenis_bencana:
+          type: string
+          enum: [banjir, gempa_bumi, tanah_longsor, kebakaran, angin_kencang, tsunami, lainnya]
+        lokasi:
+          type: string
+        koordinat_lat:
+          type: ["number", "null"]
+        koordinat_lng:
+          type: ["number", "null"]
+        deskripsi:
+          type: string
+        nama_pelapor:
+          type: string
+        kontak_pelapor:
+          type: string
+        jabatan_pelapor:
+          type: ["string", "null"]
+        jumlah_terdampak:
+          type: ["integer", "null"]
+        lokasi_pengungsian:
+          type: ["string", "null"]
+        foto_urls:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [menunggu, terverifikasi, selesai]
+        catatan_admin:
+          type: ["string", "null"]
+        created_at:
+          type: string
+        updated_at:
+          type: ["string", "null"]
+
+    LaporanDetail:
+      type: object
+      required: [id, judul, jenis_bencana, lokasi, deskripsi, nama_pelapor, kontak_pelapor, status, created_at, kebutuhan, penugasan]
+      properties:
+        id:
+          type: integer
+        judul:
+          type: string
+        jenis_bencana:
+          type: string
+        lokasi:
+          type: string
+        koordinat_lat:
+          type: ["number", "null"]
+        koordinat_lng:
+          type: ["number", "null"]
+        deskripsi:
+          type: string
+        nama_pelapor:
+          type: string
+        kontak_pelapor:
+          type: string
+        jabatan_pelapor:
+          type: ["string", "null"]
+        jumlah_terdampak:
+          type: ["integer", "null"]
+        lokasi_pengungsian:
+          type: ["string", "null"]
+        foto_urls:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        catatan_admin:
+          type: ["string", "null"]
+        created_at:
+          type: string
+        updated_at:
+          type: ["string", "null"]
+        kebutuhan:
+          type: array
+          items:
+            $ref: "#/components/schemas/Kebutuhan"
+        penugasan:
+          type: array
+          items:
+            $ref: "#/components/schemas/Penugasan"
+
+    LaporanRingkas:
+      type: object
+      required: [id, judul, jenis_bencana, lokasi, status, created_at, jumlah_kebutuhan_pending]
+      properties:
+        id:
+          type: integer
+        judul:
+          type: string
+        jenis_bencana:
+          type: string
+        lokasi:
+          type: string
+        status:
+          type: string
+        jumlah_terdampak:
+          type: ["integer", "null"]
+        created_at:
+          type: string
+        jumlah_kebutuhan_pending:
+          type: integer
+
+    LaporanInput:
+      type: object
+      required: [judul, jenis_bencana, lokasi, deskripsi, nama_pelapor, kontak_pelapor]
+      properties:
+        judul:
+          type: string
+        jenis_bencana:
+          type: string
+          enum: [banjir, gempa_bumi, tanah_longsor, kebakaran, angin_kencang, tsunami, lainnya]
+        lokasi:
+          type: string
+        koordinat_lat:
+          type: ["number", "null"]
+        koordinat_lng:
+          type: ["number", "null"]
+        deskripsi:
+          type: string
+        nama_pelapor:
+          type: string
+        kontak_pelapor:
+          type: string
+        jabatan_pelapor:
+          type: ["string", "null"]
+        jumlah_terdampak:
+          type: ["integer", "null"]
+        lokasi_pengungsian:
+          type: ["string", "null"]
+        foto_urls:
+          type: array
+          items:
+            type: string
+
+    LaporanUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [menunggu, terverifikasi, selesai]
+        catatan_admin:
+          type: ["string", "null"]
+        lokasi_pengungsian:
+          type: ["string", "null"]
+
+    Kebutuhan:
+      type: object
+      required: [id, laporan_id, kategori, nama_item, jumlah_dibutuhkan, jumlah_terpenuhi, satuan, created_at]
+      properties:
+        id:
+          type: integer
+        laporan_id:
+          type: integer
+        kategori:
+          type: string
+          enum: [pangan, sandang, medis, tempat_tinggal, air_bersih, lainnya]
+        nama_item:
+          type: string
+        jumlah_dibutuhkan:
+          type: integer
+        jumlah_terpenuhi:
+          type: integer
+        satuan:
+          type: string
+        keterangan:
+          type: ["string", "null"]
+        created_at:
+          type: string
+
+    KebutuhanInput:
+      type: object
+      required: [kategori, nama_item, jumlah_dibutuhkan, satuan]
+      properties:
+        kategori:
+          type: string
+          enum: [pangan, sandang, medis, tempat_tinggal, air_bersih, lainnya]
+        nama_item:
+          type: string
+        jumlah_dibutuhkan:
+          type: integer
+        satuan:
+          type: string
+        keterangan:
+          type: ["string", "null"]
+
+    KebutuhanUpdate:
+      type: object
+      properties:
+        jumlah_terpenuhi:
+          type: integer
+        keterangan:
+          type: ["string", "null"]
+
+    Relawan:
+      type: object
+      required: [id, nama, nik, no_hp, alamat, keahlian, status_verifikasi, created_at]
+      properties:
+        id:
+          type: integer
+        nama:
+          type: string
+        nik:
+          type: string
+        no_hp:
+          type: string
+        email:
+          type: ["string", "null"]
+        alamat:
+          type: string
+        keahlian:
+          type: array
+          items:
+            type: string
+        foto_ktp_url:
+          type: ["string", "null"]
+        status_verifikasi:
+          type: string
+          enum: [menunggu, terverifikasi, ditolak]
+        catatan_verifikasi:
+          type: ["string", "null"]
+        created_at:
+          type: string
+
+    RelawanInput:
+      type: object
+      required: [nama, nik, no_hp, alamat, keahlian]
+      properties:
+        nama:
+          type: string
+        nik:
+          type: string
+        no_hp:
+          type: string
+        email:
+          type: ["string", "null"]
+        alamat:
+          type: string
+        keahlian:
+          type: array
+          items:
+            type: string
+        foto_ktp_url:
+          type: ["string", "null"]
+
+    VerifikasiRelawanInput:
+      type: object
+      required: [status_verifikasi]
+      properties:
+        status_verifikasi:
+          type: string
+          enum: [terverifikasi, ditolak]
+        catatan_verifikasi:
+          type: ["string", "null"]
+
+    Inventaris:
+      type: object
+      required: [id, nama_barang, kategori, satuan, stok_masuk, stok_keluar, stok_sisa, created_at]
+      properties:
+        id:
+          type: integer
+        nama_barang:
+          type: string
+        kategori:
+          type: string
+          enum: [pangan, sandang, medis, tempat_tinggal, air_bersih, lainnya]
+        satuan:
+          type: string
+        stok_masuk:
+          type: integer
+        stok_keluar:
+          type: integer
+        stok_sisa:
+          type: integer
+        keterangan:
+          type: ["string", "null"]
+        created_at:
+          type: string
+        updated_at:
+          type: ["string", "null"]
+
+    InventarisInput:
+      type: object
+      required: [nama_barang, kategori, satuan, stok_awal]
+      properties:
+        nama_barang:
+          type: string
+        kategori:
+          type: string
+          enum: [pangan, sandang, medis, tempat_tinggal, air_bersih, lainnya]
+        satuan:
+          type: string
+        stok_awal:
+          type: integer
+        keterangan:
+          type: ["string", "null"]
+
+    InventarisUpdate:
+      type: object
+      properties:
+        nama_barang:
+          type: string
+        keterangan:
+          type: ["string", "null"]
+
+    TransaksiInventaris:
+      type: object
+      required: [id, inventaris_id, jenis, jumlah, keterangan, laporan_id, created_at]
+      properties:
+        id:
+          type: integer
+        inventaris_id:
+          type: integer
+        jenis:
+          type: string
+          enum: [masuk, keluar]
+        jumlah:
+          type: integer
+        keterangan:
+          type: string
+        laporan_id:
+          type: ["integer", "null"]
+        created_at:
+          type: string
+
+    TransaksiInventarisInput:
+      type: object
+      required: [jenis, jumlah, keterangan]
+      properties:
+        jenis:
+          type: string
+          enum: [masuk, keluar]
+        jumlah:
+          type: integer
+        keterangan:
+          type: string
+        laporan_id:
+          type: ["integer", "null"]
+
+    Penugasan:
+      type: object
+      required: [id, laporan_id, relawan_id, nama_relawan, detail_tugas, lokasi_tugas, status, created_at]
+      properties:
+        id:
+          type: integer
+        laporan_id:
+          type: integer
+        relawan_id:
+          type: integer
+        nama_relawan:
+          type: string
+        detail_tugas:
+          type: string
+        lokasi_tugas:
+          type: string
+        link_grup:
+          type: ["string", "null"]
+        qr_code_url:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [aktif, selesai, dibatalkan]
+        catatan:
+          type: ["string", "null"]
+        created_at:
+          type: string
+
+    PenugasanInput:
+      type: object
+      required: [laporan_id, relawan_id, detail_tugas, lokasi_tugas]
+      properties:
+        laporan_id:
+          type: integer
+        relawan_id:
+          type: integer
+        detail_tugas:
+          type: string
+        lokasi_tugas:
+          type: string
+        link_grup:
+          type: ["string", "null"]
+        catatan:
+          type: ["string", "null"]
+
+    PenugasanUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [aktif, selesai, dibatalkan]
+        catatan:
+          type: ["string", "null"]
+        link_grup:
+          type: ["string", "null"]
+
+    DashboardStatistik:
+      type: object
+      required: [total_laporan, laporan_menunggu, laporan_terverifikasi, laporan_selesai, total_relawan, relawan_terverifikasi, relawan_menunggu, total_inventaris, stok_kritis, penugasan_aktif, kebutuhan_terpenuhi, kebutuhan_total]
+      properties:
+        total_laporan:
+          type: integer
+        laporan_menunggu:
+          type: integer
+        laporan_terverifikasi:
+          type: integer
+        laporan_selesai:
+          type: integer
+        total_relawan:
+          type: integer
+        relawan_terverifikasi:
+          type: integer
+        relawan_menunggu:
+          type: integer
+        total_inventaris:
+          type: integer
+        stok_kritis:
+          type: integer
+        penugasan_aktif:
+          type: integer
+        kebutuhan_terpenuhi:
+          type: integer
+        kebutuhan_total:
+          type: integer
