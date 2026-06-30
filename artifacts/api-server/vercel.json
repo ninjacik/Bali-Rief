@@ -1,0 +1,8 @@
+{
+  "buildCommand": "node ./build.mjs",
+  "functions": {
+    "api/index.mjs": {
+      "includeFiles": "dist/**"
+    }
+  }
+}
