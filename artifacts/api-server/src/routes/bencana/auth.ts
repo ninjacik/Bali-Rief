@@ -24,7 +24,12 @@ router.post("/auth/register", async (req, res) => {
   const session = (req as any).session;
   session.userId = user.id;
   session.role = user.role;
-  return res.status(201).json({ id: user.id, nama: user.nama, email: user.email, role: user.role });
+  session.save((err: any) => {
+    if (err) {
+      return res.status(500).json({ message: "Gagal menyimpan sesi" });
+    }
+    return res.status(201).json({ id: user.id, nama: user.nama, email: user.email, role: user.role });
+  });
 });
 
 router.post("/auth/login", async (req, res) => {
@@ -43,7 +48,12 @@ router.post("/auth/login", async (req, res) => {
   const session = (req as any).session;
   session.userId = user.id;
   session.role = user.role;
-  return res.json({ id: user.id, nama: user.nama, email: user.email, role: user.role });
+  session.save((err: any) => {
+    if (err) {
+      return res.status(500).json({ message: "Gagal menyimpan sesi" });
+    }
+    return res.json({ id: user.id, nama: user.nama, email: user.email, role: user.role });
+  });
 });
 
 router.post("/auth/logout", (req, res) => {
