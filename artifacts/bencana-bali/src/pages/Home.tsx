@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+const BASE = import.meta.env.VITE_API_URL.replace(/\/$/, "");
 
 async function fetchStats() {
   const res = await fetch(`${BASE}/api/dashboard/statistik`);

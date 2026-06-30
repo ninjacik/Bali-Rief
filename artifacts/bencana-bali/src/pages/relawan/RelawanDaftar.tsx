@@ -17,7 +17,7 @@ const KEAHLIAN_OPTIONS = [
   "Medis", "SAR (Search & Rescue)", "Logistik", "Komunikasi", "Transportasi", "Psikologi", "Memasak", "Lainnya"
 ];
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+const BASE = import.meta.env.VITE_API_URL.replace(/\/$/, "");
 
 export default function RelawanDaftar() {
   const [, navigate] = useLocation();

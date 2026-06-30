@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, MapPin, AlertTriangle, ClipboardList, ExternalLink, Clock, CheckCircle2, XCircle, UserCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+const BASE = import.meta.env.VITE_API_URL.replace(/\/$/, "");
 
 export default function RelawanDashboard() {
   const { user } = useAuth();

@@ -29,7 +29,7 @@ const KATEGORI_OPTIONS = [
 
 const SATUAN_OPTIONS = ["pcs", "kg", "liter", "dus", "lusin", "sak", "unit", "lembar", "botol"];
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+const BASE = import.meta.env.VITE_API_URL.replace(/\/$/, "");
 
 type KebutuhanItem = {
   kategori: string;
