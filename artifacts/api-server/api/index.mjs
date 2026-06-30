@@ -1,4 +1,2 @@
-import express from 'express';
-import('../dist/index.mjs');
-const app = express();
+import app from '../src/app.ts';
 export default app;
