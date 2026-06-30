@@ -1,2 +1,5 @@
 import app from '../src/app.ts';
-export default app;
+
+export default function handler(req, res) {
+  app(req, res);
+}
