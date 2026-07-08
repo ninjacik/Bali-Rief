@@ -218,14 +218,21 @@ export default function Home() {
       {/* Role Cards */}
       <div className="max-w-6xl mx-auto px-6 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-3">Pilih Peran Anda</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-3">
+            {user ? "Dashboard Anda" : "Pilih Peran Anda"}
+          </h2>
           <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-            Setiap peran memiliki akses dan fitur yang berbeda, disesuaikan dengan kebutuhan koordinasi bencana.
+            {user
+              ? "Akses dashboard sesuai peran yang telah ditetapkan untuk Anda."
+              : "Setiap peran memiliki akses dan fitur yang berbeda, disesuaikan dengan kebutuhan koordinasi bencana."}
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {ROLE_CARDS.map(card => {
+        <div className={cn(
+          "grid gap-5",
+          user ? "sm:grid-cols-1 max-w-sm mx-auto" : "sm:grid-cols-2 lg:grid-cols-4"
+        )}>
+          {(user ? ROLE_CARDS.filter(card => card.role === user.role) : ROLE_CARDS).map(card => {
             const Icon = card.icon;
             const isCurrentRole = user?.role === card.role;
             return (
