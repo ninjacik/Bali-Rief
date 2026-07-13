@@ -10,6 +10,8 @@ import {
   ChevronDown, ChevronUp, Heart, Package, Home, Box, Banknote
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const BASE = import.meta.env.VITE_API_URL.replace(/\/$/, "");
 
@@ -33,6 +35,65 @@ const JENIS_LABELS: Record<string, string> = {
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
+}
+
+function exportToPDF(laporan: any[]) {
+  const doc = new jsPDF();
+
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.text("Laporan Transparansi - Bali Tanggap Bencana", 14, 15);
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Dicetak: ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}`, 14, 22);
+
+  const totalDampak = laporan.reduce((s, l) => s + (l.jumlah_terdampak || 0), 0);
+  const totalDonasi = laporan.reduce((s, l) => s + (l.donasi?.length || 0), 0);
+  const totalDana = laporan.reduce((s, l) =>
+    s + (l.donasi || []).filter((d: any) => d.jenis === "dana").reduce((x: number, d: any) => x + (d.jumlah_dana || 0), 0), 0);
+
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.text("Ringkasan", 14, 32);
+
+  autoTable(doc, {
+    startY: 36,
+    head: [["Total Kejadian", "Jiwa Terdampak", "Total Donasi", "Total Dana"]],
+    body: [[
+      laporan.length.toString(),
+      totalDampak.toLocaleString("id-ID"),
+      totalDonasi.toString(),
+      "Rp " + totalDana.toLocaleString("id-ID"),
+    ]],
+    theme: "grid",
+    headStyles: { fillColor: [220, 38, 38] },
+  });
+
+  const tableData = laporan.map(l => [
+    l.judul,
+    JENIS_LABELS[l.jenis_bencana] || l.jenis_bencana,
+    l.lokasi,
+    STATUS_LABELS[l.status] || l.status,
+    (l.jumlah_terdampak || 0).toLocaleString("id-ID"),
+    (l.donasi?.length || 0).toString(),
+    new Date(l.created_at).toLocaleDateString("id-ID"),
+  ]);
+
+  autoTable(doc, {
+    startY: (doc as any).lastAutoTable.finalY + 10,
+    head: [["Judul", "Jenis", "Lokasi", "Status", "Terdampak", "Donasi", "Tanggal"]],
+    body: tableData,
+    theme: "striped",
+    headStyles: { fillColor: [220, 38, 38] },
+    styles: { fontSize: 8 },
+    columnStyles: {
+      0: { cellWidth: 45 },
+      2: { cellWidth: 35 },
+    },
+  });
+
+  doc.save(`transparansi-bali-tanggap-bencana-${new Date().toISOString().slice(0, 10)}.pdf`);
 }
 
 function LaporanCard({ laporan }: { laporan: any }) {
@@ -64,7 +125,6 @@ function LaporanCard({ laporan }: { laporan: any }) {
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">{laporan.deskripsi}</p>
 
-        {/* Statistik */}
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-muted/40 rounded-lg p-3 text-center">
             <Users className="h-4 w-4 text-primary mx-auto mb-1" />
@@ -83,7 +143,6 @@ function LaporanCard({ laporan }: { laporan: any }) {
           </div>
         </div>
 
-        {/* Ringkasan donasi */}
         {(donasiDana.length > 0 || donasiBarang.length > 0) && (
           <div className="grid grid-cols-2 gap-3">
             {donasiDana.length > 0 && (
@@ -109,7 +168,6 @@ function LaporanCard({ laporan }: { laporan: any }) {
           </div>
         )}
 
-        {/* Foto dokumentasi */}
         {laporan.foto_penyerahan?.length > 0 && (
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
@@ -129,7 +187,6 @@ function LaporanCard({ laporan }: { laporan: any }) {
           </div>
         )}
 
-        {/* Relawan */}
         {laporan.relawan_bertugas?.length > 0 && (
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Relawan Bertugas</p>
@@ -141,7 +198,6 @@ function LaporanCard({ laporan }: { laporan: any }) {
           </div>
         )}
 
-        {/* Detail kebutuhan */}
         {laporan.kebutuhan?.length > 0 && (
           <div>
             <button onClick={() => setExpandKebutuhan(v => !v)}
@@ -177,7 +233,6 @@ function LaporanCard({ laporan }: { laporan: any }) {
           </div>
         )}
 
-        {/* Detail donasi */}
         {laporan.donasi?.length > 0 && (
           <div>
             <button onClick={() => setExpandDonasi(v => !v)}
@@ -248,7 +303,19 @@ export default function Transparansi() {
               <span className="text-muted-foreground text-sm hidden sm:block">— Bali Tanggap Bencana</span>
             </div>
           </div>
-          <Badge variant="outline" className="text-xs">Akses Publik</Badge>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportToPDF(laporan)}
+              disabled={isLoading || laporan.length === 0}
+              className="flex items-center gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              Export PDF
+            </Button>
+            <Badge variant="outline" className="text-xs">Akses Publik</Badge>
+          </div>
         </div>
       </header>
 
