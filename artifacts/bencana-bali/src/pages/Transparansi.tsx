@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   AlertTriangle, MapPin, Users, Camera, FileText,
-  ChevronDown, ChevronUp, Heart, Package, Home, Box, Banknote
+  ChevronDown, ChevronUp, Heart, Package, Home, Box, Banknote, Download
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
@@ -37,7 +37,7 @@ function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
 }
 
-function exportToPDF(laporan: any[]) {
+function exportSemuaLaporanPDF(laporan: any[]) {
   const doc = new jsPDF();
 
   doc.setFontSize(16);
@@ -96,6 +96,119 @@ function exportToPDF(laporan: any[]) {
   doc.save(`transparansi-bali-tanggap-bencana-${new Date().toISOString().slice(0, 10)}.pdf`);
 }
 
+function exportSatuLaporanPDF(laporan: any) {
+  const doc = new jsPDF();
+
+  // Header
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("Bali Tanggap Bencana", 14, 15);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Dicetak: ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}`, 14, 22);
+
+  // Judul laporan
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.text(laporan.judul, 14, 32);
+
+  // Info dasar
+  autoTable(doc, {
+    startY: 38,
+    head: [["Field", "Detail"]],
+    body: [
+      ["Jenis Bencana", JENIS_LABELS[laporan.jenis_bencana] || laporan.jenis_bencana],
+      ["Lokasi", laporan.lokasi],
+      ["Status", STATUS_LABELS[laporan.status] || laporan.status],
+      ["Jumlah Terdampak", (laporan.jumlah_terdampak || 0).toLocaleString("id-ID") + " jiwa"],
+      ["Lokasi Pengungsian", laporan.lokasi_pengungsian || "-"],
+      ["Nama Pelapor", laporan.nama_pelapor],
+      ["Jabatan Pelapor", laporan.jabatan_pelapor || "-"],
+      ["Kontak Pelapor", laporan.kontak_pelapor],
+      ["Tanggal Laporan", new Date(laporan.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })],
+    ],
+    theme: "grid",
+    headStyles: { fillColor: [220, 38, 38] },
+    styles: { fontSize: 9 },
+    columnStyles: { 0: { cellWidth: 50, fontStyle: "bold" } },
+  });
+
+  // Deskripsi
+  const afterInfo = (doc as any).lastAutoTable.finalY + 8;
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.text("Deskripsi", 14, afterInfo);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  const deskripsiLines = doc.splitTextToSize(laporan.deskripsi || "-", 180);
+  doc.text(deskripsiLines, 14, afterInfo + 6);
+
+  // Kebutuhan
+  if (laporan.kebutuhan?.length > 0) {
+    const afterDeskripsi = afterInfo + 6 + deskripsiLines.length * 5 + 8;
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("Daftar Kebutuhan", 14, afterDeskripsi);
+
+    autoTable(doc, {
+      startY: afterDeskripsi + 4,
+      head: [["Item", "Dibutuhkan", "Terpenuhi", "Satuan", "Status"]],
+      body: laporan.kebutuhan.map((k: any) => {
+        const sisa = Math.max(0, k.jumlah_dibutuhkan - k.jumlah_terpenuhi);
+        return [
+          k.nama_item,
+          k.jumlah_dibutuhkan,
+          k.jumlah_terpenuhi,
+          k.satuan,
+          sisa === 0 ? "Terpenuhi" : `Sisa ${sisa}`,
+        ];
+      }),
+      theme: "striped",
+      headStyles: { fillColor: [220, 38, 38] },
+      styles: { fontSize: 8 },
+    });
+  }
+
+  // Donasi
+  const donasiDana = (laporan.donasi || []).filter((d: any) => d.jenis === "dana");
+  const donasiBarang = (laporan.donasi || []).filter((d: any) => d.jenis === "barang");
+  const totalDana = donasiDana.reduce((s: number, d: any) => s + (d.jumlah_dana || 0), 0);
+
+  if (laporan.donasi?.length > 0) {
+    const afterKebutuhan = (doc as any).lastAutoTable.finalY + 8;
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Donasi (${laporan.donasi.length} total — Dana: ${formatRupiah(totalDana)})`, 14, afterKebutuhan);
+
+    autoTable(doc, {
+      startY: afterKebutuhan + 4,
+      head: [["Donatur", "Jenis", "Jumlah", "Tanggal"]],
+      body: laporan.donasi.map((d: any) => [
+        d.nama_donatur,
+        d.jenis === "dana" ? "Dana" : "Barang",
+        d.jenis === "dana" ? formatRupiah(d.jumlah_dana) : `${d.jumlah_barang} × ${d.nama_barang}`,
+        new Date(d.created_at).toLocaleDateString("id-ID"),
+      ]),
+      theme: "striped",
+      headStyles: { fillColor: [220, 38, 38] },
+      styles: { fontSize: 8 },
+    });
+  }
+
+  // Relawan
+  if (laporan.relawan_bertugas?.length > 0) {
+    const afterDonasi = (doc as any).lastAutoTable.finalY + 8;
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("Relawan Bertugas", 14, afterDonasi);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(laporan.relawan_bertugas.join(", "), 14, afterDonasi + 6);
+  }
+
+  doc.save(`laporan-${laporan.id}-${laporan.judul.replace(/\s+/g, "-").toLowerCase()}.pdf`);
+}
+
 function LaporanCard({ laporan }: { laporan: any }) {
   const [expandKebutuhan, setExpandKebutuhan] = useState(false);
   const [expandDonasi, setExpandDonasi] = useState(false);
@@ -120,6 +233,15 @@ function LaporanCard({ laporan }: { laporan: any }) {
               <MapPin className="h-3.5 w-3.5" />{laporan.lokasi}
             </div>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportSatuLaporanPDF(laporan)}
+            className="shrink-0 flex items-center gap-1.5 text-xs"
+          >
+            <Download className="h-3.5 w-3.5" />
+            PDF
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -307,12 +429,12 @@ export default function Transparansi() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => exportToPDF(laporan)}
+              onClick={() => exportSemuaLaporanPDF(laporan)}
               disabled={isLoading || laporan.length === 0}
               className="flex items-center gap-2"
             >
               <FileText className="h-4 w-4" />
-              Export PDF
+              Export Semua
             </Button>
             <Badge variant="outline" className="text-xs">Akses Publik</Badge>
           </div>
